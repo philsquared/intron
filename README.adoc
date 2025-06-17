@@ -1,0 +1,283 @@
+= Intron
+
+Intron is an HTML templating DSL.
+
+Unlike many HTML templating libraries, as a DSL it also simplifies the writing of the raw HTML itself.
+It is not unique in either of these goals (templating or being an HTML-generating DSL), but few others combine the two.
+
+== Generating HTML
+
+It's important to start with the knowledge that Intron is a "significant-indentation" language.
+Like Python. Or YAML. Probably more like YAML in this case (unlike Python, indentation is always with spaces. No tabs). This means we don't need to have closing tags.
+
+In fact, we don't usually need anything to signal the end of a block, either than the end of a level of indentation.
+
+So the following:
+
+```
+div
+```
+
+Generates
+
+```html
+<div></div>
+```
+
+Intron is aware of "empty" HTML elements, like `hr`, so will not generate a closing tag:
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+hr
+----
+a|
+[source, HTML]
+----
+<hr>
+----
+|===
+
+if you want to put some text inside an element you can write it on the same line by putting a colon between the tag (or tags, or more, as we'll see)
+and the text:
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+div: Hello, world
+----
+a|
+[source, HTML]
+----
+<div>Hello,world</div>
+----
+|===
+
+You can add classes with `.` and an id with `#` - just like in CSS:
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+div.cls1.cls2#main: Hello, world
+----
+a|
+[source, HTML]
+----
+<div id="main" class="cls1 cls2">
+    Hello,world
+</div>
+----
+|===
+
+Now you can nest one div inside another by using structural indentation:
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+div.cls1.cls2#main:
+  div.cls3#secondary:
+    Hello, world
+----
+a|
+[source, HTML]
+----
+<div id="main" class="cls1 cls2">
+    <div id="secondary" class="cls3">
+        Hello,world
+    </div>
+</div>
+----
+|===
+
+But in the case where an element has only one child you can put them on one line with the `/` separator:
+
+```
+div.cls1.cls2#main/div.cls3#secondary:
+  Hello, world
+```
+
+If that looks like it's becoming cluttered feel free to add some whitespace:
+
+```
+div.cls1.cls2#main / div.cls3#secondary: Hello, world
+```
+
+But once you get used it you probably won't need it. In fact we can abbreviate this further -
+`div` is so common that it can be ommitted (it's effectively the "default tag"). If there are no classes or ids you'll need a `.` to show that something has been elided:
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+.cls1.cls2#main/.: Hello, world
+----
+a|
+[source, HTML]
+----
+<div id="main" class="cls1 cls2">
+    <div>
+        Hello,world
+    </div>
+</div>
+----
+|===
+
+Not bad!
+
+What about attributes?
+
+You can write these much like you would in normal HTML: space separated, with a space after the tag name (or classes or id):
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+#main style="border: 1px": with attributes
+----
+a|
+[source, HTML]
+----
+<div id="main" style="border: 1px">
+    with attributes
+</div>
+----
+|===
+
+=== Comments
+
+Except within strings, the `//` character pair starts a single line comment.
+The comment extends to the end of the current line.
+The `//` itself, and anything after it, until the end of the line, is ignored.
+
+[cols="1,1"]
+|===
+|Intron | HTML
+a|
+[source, Intron]
+----
+#main: Hello // This is a comment
+----
+a|
+[source, HTML]
+----
+<div id="main">Hello</div>
+----
+|===
+
+=== Text
+
+So far we've just used short strings inline with parent elements. This is a useful shortcut.
+Anything after a `:` is assumed to be a string, unless it begins with one of, `/`, `"`, `'`, `|` or `>`.
+If you need any of those characters you will need to quote the string (with either `"` or `'`).
+
+[cols="1,1"]
+|===
+a|
+[source, Intron]
+----
+.: "// This is not a comment"
+----
+a|
+[source, HTML]
+----
+<div>
+    // This is not a comment
+</div>
+----
+|===
+
+Remember, without the quotes, `//` starts a comment.
+
+==== Folded text
+If the first character after a `:` (on the same line, or indented on the next line) is a `>`
+then this starts a _folded text block_. The whole following block is treated as an unquoted string, and any whitespace is collapsed according to HTML rules (and may be reflowed):
+
+[cols="1,1"]
+|===
+a|
+[source, Intron]
+----
+.: >
+  All of this text is treated
+  as a single string.
+  Newlines,   extra spaces
+    and tabs
+  are collapsed.
+
+.:
+  > The > may start on the following line,
+    in which case it requires more indentation.
+> Folded strings can also appear at the top level
+----
+a|
+[source, HTML]
+----
+<div>
+    All of this text is treated as a
+    single string. Newlines, extra
+    spaces and tabs are collapsed.
+</div>
+<div>
+    The &gt; may start on
+    the following line, in which case
+    it requires more indentation.
+</div>
+Folded strings can also appear at the top level
+----
+|===
+
+==== Literal text
+The `|` character is similar to `>` but starts a _literal text block_. When placed inline after a `:` the string starts with the first non-whitespace character and (retaining newlines) continues strictly at the next indentation level (any additional indentation becomes part of the string).
+
+If the `|` appears on the next line then the string starts on the line following at the same indentation as the `|`. This allows the `|` to serve as a visual indentation guide:
+
+[cols="1,1", separator=!]
+!===
+a!
+[source, Intron]
+----
+pre: | This is a single line literal
+pre: | A multiline literal.
+       The string continues, here.
+         Any additional indentation
+       is part of the string
+pre:
+  |
+  The string now starts here
+  with a clear starting marker.
+----
+a!
+[source, HTML]
+----
+<pre>
+This is a single line literal
+</pre>
+<pre>
+A multiline literal.
+The string continues, here.
+  Any additional indentation
+is part of the string
+</pre>
+<pre>
+The string now starts here
+with a clear starting marker.
+</pre>
+----
+!===
+
