@@ -28,7 +28,7 @@ Intron is aware of "empty" HTML elements, like `hr`, so will not generate a clos
 
 [cols="1,1"]
 |===
-|Intron | HTML
+|Intron | Generated HTML
 a|
 [source, Intron]
 ----
@@ -46,7 +46,7 @@ and the text:
 
 [cols="1,1"]
 |===
-|Intron | HTML
+|Intron | Generated HTML
 a|
 [source, Intron]
 ----
@@ -63,7 +63,7 @@ You can add classes with `.` and an id with `#` - just like in CSS:
 
 [cols="1,1"]
 |===
-|Intron | HTML
+|Intron | Generated HTML
 a|
 [source, Intron]
 ----
@@ -82,7 +82,7 @@ Now you can nest one div inside another by using structural indentation:
 
 [cols="1,1"]
 |===
-|Intron | HTML
+|Intron | Generated HTML
 a|
 [source, Intron]
 ----
